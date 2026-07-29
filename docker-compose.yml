@@ -32,6 +32,10 @@ services:
       - /var/tmp/jasminegraph-ui-backend:/app/caches
     environment:
       - POSTGRES_URL=postgresql://admin:admin_password@postgres:5432/jasminegraphdb
+      - HOST=http://backend
+    networks:
+      - default
+      - jasminenet
     healthcheck:
       test: [ "CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/health" ]
       interval: 5s
@@ -100,3 +104,8 @@ services:
 volumes:
   postgres-data:
     driver: local
+
+networks:
+  jasminenet:
+    external: true
+    name: jasminenet

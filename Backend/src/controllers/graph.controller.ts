@@ -396,9 +396,6 @@ const getKafkaTopics = async (req: Request, res: Response) => {
             .filter(Boolean);
 
         if (brokers.length === 0) {
-            // Get broker from cluster properties
-            await getClusterProperties(req, res as any);
-            // The response was already sent by getClusterProperties
             const properties = buildFallbackClusterProperties(connection);
             if (properties.broker) {
                 brokers = [properties.broker];

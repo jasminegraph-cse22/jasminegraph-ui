@@ -86,7 +86,7 @@ export default function GraphUpload() {
     const [fileUrl, setFileUrl] = useState<string>();
     const [modalOpen, setModalOpen] = useState(false);
     const [isLocalFileUpload, setIsLocalFileUpload] = useState<boolean>(false);
-    const [showUploadSection, setShowUploadSection] = useState<boolean>(false);
+    const [showUploadSection, setShowUploadSection] = useState<boolean>(true);
     const [graphs, setGraphs] = useState<IKnowledgeGraph[]>([]);
     const [initForm, setInitForm] = useState<IKnowledgeGraph>();
     const [loading, setLoading] = useState<boolean>(false);
