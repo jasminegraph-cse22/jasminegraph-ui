@@ -15,4 +15,4 @@ The frontend uses **Redux Toolkit (RTK)**.
 ## 3. Implicit Contracts & Constraints (Important for AI Agents)
 * **No Local State for Global Data**: AI agents MUST NOT use `useState` or `useContext` to store data that needs to be accessed by multiple unrelated components (e.g., the currently selected Cluster ID or fetched Graph data). Always create or update an RTK Slice.
 * **Immutability**: RTK uses Immer under the hood, allowing "mutating" syntax in reducers. However, agents must still respect this pattern and never mutate state directly outside of slice reducers.
-* **Async Logic**: For complex API fetching workflows, agents should prefer Redux Thunks or RTK Query rather than raw `useEffect` blocks in components to keep the UI clean.
+* **Async Logic**: For complex API fetching workflows in new code, agents should prefer Redux Thunks or RTK Query rather than raw `useEffect` blocks in components to keep the UI clean. Note: existing code currently uses `useEffect` for async logic.

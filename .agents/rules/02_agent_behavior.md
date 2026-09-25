@@ -6,6 +6,6 @@ These rules apply to any AI Coding Agent (Antigravity, Claude Code, etc.) operat
 *   **Commits**: Use Conventional Commits format (e.g., `feat(frontend): add graph visualizer`, `fix(backend): resolve token refresh loop`).
 
 ## 2. Verification
-*   **Docker Environment & IDE Errors**: This repository relies heavily on Docker containers. Local IDE warnings or type errors (e.g., due to missing or out-of-sync `node_modules` on the host environment) should generally be ignored.
-*   **Type Checking**: Do not rely on local IDE feedback to verify TypeScript compilation. Instead, verify compilation by checking the Docker container logs or by running the appropriate type-check/build commands inside the container.
+*   **Docker Environment & IDE Errors**: This repository relies heavily on Docker containers. Local IDE warnings may stem from missing or out-of-sync `node_modules` on the host environment, but do not ignore actual compilation failures.
+*   **Type Checking**: You must verify that the code passes compilation by checking the Docker container logs or by running the appropriate type-check/build commands inside the container, rather than relying exclusively on host IDE diagnostics.
 *   Ensure that any new frontend components do not break existing Redux state flows.
