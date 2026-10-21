@@ -65,7 +65,7 @@ export default function ClusterHeaderSelector({
       }
     }
     loadClusters();
-  }, [getSrvAccessToken]);
+  }, []);
 
   const handleSelectCluster = (targetCluster: { id: number; name: string; platform: string }) => {
     // Determine the current subpath: e.g. /clusters/7/instance -> /instance

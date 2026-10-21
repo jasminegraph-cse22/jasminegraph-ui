@@ -60,7 +60,7 @@ export default function ClusterDetails({ params }: { params: { id: string } }) {
     return () => {
       isMounted = false;
     };
-  }, [params.id, dispatch, getSrvAccessToken]);
+  }, [params.id]);
 
   const clusterTitle =
     selectedCluster?.id === Number(params.id)

@@ -13,6 +13,7 @@ limitations under the License.
 
 "use client";
 
+import { useCallback } from "react";
 import axios from "axios";
 import { JWT_SEGMENT_COUNT } from "@/properties";
 
@@ -20,31 +21,33 @@ export const ACCESS_TOKEN = "auth.srv.token";
 export const REFRESH_TOKEN = "auth.srv.refresh.token";
 
 const useAccessToken = () => {
-  const getSrvAccessToken = () => {
+  const getSrvAccessToken = useCallback(() => {
+    if (typeof window === "undefined") return null;
     return localStorage.getItem(ACCESS_TOKEN);
-  };
+  }, []);
 
-  const setSrvAccessToken = (accessToken: string) => {
+  const setSrvAccessToken = useCallback((accessToken: string) => {
     if (typeof window === "undefined") return null;
     localStorage.setItem(ACCESS_TOKEN, accessToken);
-  };
+  }, []);
 
-  const getSrvRefreshToken = () => {
+  const getSrvRefreshToken = useCallback(() => {
+    if (typeof window === "undefined") return null;
     return localStorage.getItem(REFRESH_TOKEN);
-  };
+  }, []);
 
-  const setSrvRefreshToken = (refreshToken: string) => {
+  const setSrvRefreshToken = useCallback((refreshToken: string) => {
     if (typeof window === "undefined") return null;
     localStorage.setItem(REFRESH_TOKEN, refreshToken);
-  };
+  }, []);
 
-  const clearTokens = () => {
+  const clearTokens = useCallback(() => {
     if (typeof window === "undefined") return null;
     localStorage.removeItem(ACCESS_TOKEN);
     localStorage.removeItem(REFRESH_TOKEN);
-  };
+  }, []);
 
-  const isTokenExpired = (token: string | null) => {
+  const isTokenExpired = useCallback((token: string | null) => {
     if (!token || token.split('.').length !== JWT_SEGMENT_COUNT) 
       return true;
     try {
@@ -62,9 +65,9 @@ const useAccessToken = () => {
       console.error("[TOKEN] Error parsing token:", error);
       return true;
     }
-  };
+  }, []);
 
-  const refreshAccessToken = async () => {
+  const refreshAccessToken = useCallback(async () => {
     try {
       const refreshToken = getSrvRefreshToken();
       if (!refreshToken) {
@@ -85,7 +88,7 @@ const useAccessToken = () => {
       clearTokens();
       throw error;
     }
-  };
+  }, [getSrvRefreshToken, setSrvAccessToken, setSrvRefreshToken, clearTokens]);
 
   return {
     getSrvAccessToken,
