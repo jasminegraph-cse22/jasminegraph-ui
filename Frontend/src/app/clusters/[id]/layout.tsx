@@ -12,15 +12,17 @@ limitations under the License.
  */
 
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import PageWrapper from "@/layouts/page-wrapper";
 import { Layout, Menu, theme } from "antd";
 import type { MenuProps } from "antd";
 import { ClusterTopMenu } from "@/data/menu-data";
 import * as Routes from "@/routes/page-routes";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import ClusterHeaderSelector from "@/components/observability/ClusterHeaderSelector";
 
 const { Content } = Layout;
+
 export default function ClusterLayout({
   children,
   params,
@@ -31,25 +33,26 @@ export default function ClusterLayout({
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-  const [current, setCurrent] = useState(
-    Routes.CLUSTER_PAGE_ROUTES.clusterDetails
-  );
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Determine current active tab based on URL pathname
+  const getCurrentTabKey = () => {
+    if (pathname.includes("/instance")) return Routes.CLUSTER_PAGE_ROUTES.instance;
+    if (pathname.includes("/deployment")) return Routes.CLUSTER_PAGE_ROUTES.deployment;
+    if (pathname.includes("/access-management")) return Routes.CLUSTER_PAGE_ROUTES.accessManagement;
+    if (pathname.includes("/logs")) return Routes.CLUSTER_PAGE_ROUTES.logs;
+    return Routes.CLUSTER_PAGE_ROUTES.clusterDetails;
+  };
 
   const onClick: MenuProps["onClick"] = (e) => {
-    console.log("click ", e);
-    setCurrent(e.key);
-    router.push(Routes.SIDE_MENU_ROUTES.clusterPage + "/" + params.id + e.key);
+    const routeSuffix = e.key === "/" ? "" : e.key;
+    router.push(`${Routes.SIDE_MENU_ROUTES.clusterPage}/${params.id}${routeSuffix}`);
   };
 
   return (
     <PageWrapper>
       <Layout style={{ padding: "24px 24px", height: "92vh" }}>
-        {/* <Breadcrumb style={{ margin: "16px 0" }}>
-        <Breadcrumb.Item>Home</Breadcrumb.Item>
-        <Breadcrumb.Item>List</Breadcrumb.Item>
-        <Breadcrumb.Item>App</Breadcrumb.Item>
-      </Breadcrumb> */}
         <Content
           style={{
             padding: 24,
@@ -60,12 +63,18 @@ export default function ClusterLayout({
             overflow: "auto",
           }}
         >
+          {/* Cluster Switcher Pills: prod-graph-01, staging-graph-02 */}
+          <ClusterHeaderSelector currentClusterId={params.id} />
+
+          {/* Sub Navigation Tabs */}
           <Menu
             onClick={onClick}
-            selectedKeys={[current]}
+            selectedKeys={[getCurrentTabKey()]}
             mode="horizontal"
             items={ClusterTopMenu}
+            className="mb-6 font-medium text-slate-700"
           />
+
           {children}
         </Content>
       </Layout>
