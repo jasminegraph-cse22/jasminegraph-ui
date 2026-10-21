@@ -26,6 +26,7 @@ import {
 import NodeCard from "@/components/observability/NodeCard";
 import NetworkTopologyGraph from "@/components/observability/NetworkTopologyGraph";
 import ObservabilityProgressBar from "@/components/observability/ObservabilityProgressBar";
+import useAccessToken from "@/hooks/useAccessToken";
 
 type SubViewType = "nodes" | "network";
 
@@ -33,13 +34,15 @@ export default function InstancePage({ params }: { params: { id: string } }) {
   const [activeSubView, setActiveSubView] = useState<SubViewType>("nodes");
   const [loading, setLoading] = useState<boolean>(true);
   const [data, setData] = useState<IClusterObservabilityData | null>(null);
+  const { getSrvAccessToken } = useAccessToken();
 
   useEffect(() => {
     let isMounted = true;
     async function fetchData() {
       setLoading(true);
       try {
-        const result = await getClusterObservabilityMetrics(params.id);
+        const token = getSrvAccessToken();
+        const result = await getClusterObservabilityMetrics(params.id, token);
         if (isMounted) setData(result);
       } catch (err) {
         console.error("Failed to load instance metrics: ", err);

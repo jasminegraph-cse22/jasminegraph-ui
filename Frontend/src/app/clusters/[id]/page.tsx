@@ -38,11 +38,11 @@ export default function ClusterDetails({ params }: { params: { id: string } }) {
     async function loadData() {
       setLoading(true);
       try {
-        const metrics = await getClusterObservabilityMetrics(params.id);
+        const token = getSrvAccessToken();
+        const metrics = await getClusterObservabilityMetrics(params.id, token);
         if (isMounted) setObservabilityData(metrics);
 
         // Try to fetch live cluster details if token available
-        const token = getSrvAccessToken();
         if (token) {
           const res = await getCluster(params.id, token).catch(() => null);
           if (res?.data && isMounted) {

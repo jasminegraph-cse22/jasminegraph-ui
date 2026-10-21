@@ -25,17 +25,20 @@ import DeploymentStatCard from "@/components/observability/DeploymentStatCard";
 import MetricAreaChart from "@/components/observability/MetricAreaChart";
 import StatusBadge from "@/components/observability/StatusBadge";
 import ObservabilityProgressBar from "@/components/observability/ObservabilityProgressBar";
+import useAccessToken from "@/hooks/useAccessToken";
 
 export default function DeploymentPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState<boolean>(true);
   const [data, setData] = useState<IClusterObservabilityData | null>(null);
+  const { getSrvAccessToken } = useAccessToken();
 
   useEffect(() => {
     let isMounted = true;
     async function fetchData() {
       setLoading(true);
       try {
-        const result = await getClusterObservabilityMetrics(params.id);
+        const token = getSrvAccessToken();
+        const result = await getClusterObservabilityMetrics(params.id, token);
         if (isMounted) setData(result);
       } catch (err) {
         console.error("Failed to load deployment metrics: ", err);

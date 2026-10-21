@@ -90,3 +90,11 @@ export interface IClusterObservabilityData {
   deploymentSummary: IDeploymentSummary;
   aggregateMetrics: IAggregateResourceMetrics;
 }
+
+export interface ILogEntry {
+  id?: string;
+  timestamp: string;
+  level: "INFO" | "WARN" | "ERROR" | "DEBUG" | string;
+  node: string;
+  msg: string;
+}
