@@ -13,6 +13,7 @@ limitations under the License.
 
 import { Router } from 'express';
 import { getAllClusters, getCluster, addNewCluster, addUserToCluster, removeUserFromCluster, getMyClusters, getSelectedClustersStatus } from '../controllers/cluster.controller';
+import { observabilityRoute } from './observability.routes';
 
 const clusterRoute = () => {
   const router = Router();
@@ -20,6 +21,7 @@ const clusterRoute = () => {
   router.get('/', getAllClusters);
   router.get('/myClusters', getMyClusters); 
   router.post('/status', getSelectedClustersStatus);
+  router.use('/:id/observability', observabilityRoute());
   router.get('/:id', getCluster);
   router.post('/', addNewCluster);
   router.post('/addUser', addUserToCluster);
