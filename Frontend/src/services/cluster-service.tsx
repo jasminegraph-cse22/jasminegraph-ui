@@ -14,7 +14,7 @@ limitations under the License.
 'use client';
 import { AxiosResponse } from "axios";
 import {authApi} from "./axios";
-import { IClusterProperties } from "@/types/cluster-types"
+import { IClusterProperties, INodeDetails } from "@/types/cluster-types"
 interface ApiResponse<T> {
   data: T;
 }
@@ -167,5 +167,22 @@ export async function getClusterProperties(param: string): Promise<{data: IClust
     };
   } catch (err) {
     return Promise.reject();
+  }
+}
+
+export async function getClusterNodes(clusterID: string, token: string): Promise<{data: INodeDetails[]}> {
+  try {
+    const result = await authApi({
+      method: "get",
+      url: `/backend/clusters/${clusterID}/nodes`,
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    }).then((res) => res.data);
+    return {
+      data: result.data,
+    };
+  } catch (err) {
+    return Promise.reject(err);
   }
 }

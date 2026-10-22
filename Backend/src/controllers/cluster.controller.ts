@@ -23,6 +23,23 @@ import {
 import { ErrorCode } from '../constants/error.constants';
 import { HTTP } from '../constants/constants';
 import net from 'net';
+import axios from 'axios';
+
+// JasmineGraph master/workers push cpu_load_percentage and memory_usage_percentage to the
+// Pushgateway (job = "Master" or "<worker host>:<port>"), which Prometheus scrapes.
+const PROMETHEUS_URL = process.env.PROMETHEUS_URL || 'http://prometheus:9090';
+const STALE_AFTER_SECONDS = 120;
+const SATURATED_PERCENT = 85;
+
+const queryPrometheusByJob = async (query: string): Promise<Record<string, number>> => {
+  const response = await axios.get(`${PROMETHEUS_URL}/api/v1/query`, { params: { query }, timeout: 3000 });
+  const series: any[] = response.data?.data?.result ?? [];
+  const values: Record<string, number> = {};
+  series.forEach((s) => {
+    values[s.metric.job] = Number(s.value[1]);
+  });
+  return values;
+};
 
 const addNewCluster = async (req: Request, res: Response) => {
   const { name, description, host, port } = req.body;
@@ -185,4 +202,55 @@ const getSelectedClustersStatus = async (req: Request, res: Response) => {
   }
 };
 
-export { addNewCluster, getAllClusters, getCluster, addUserToCluster, removeUserFromCluster, getMyClusters, getSelectedClustersStatus };
+const getClusterNodes = async (req: Request, res: Response) => {
+  const clusterId = Number(req.params.id);
+  if (isNaN(clusterId)) {
+    return res.status(HTTP[400]).json({ message: 'Invalid cluster ID' });
+  }
+  try {
+    const cluster = await getClusterByIdRepo(clusterId);
+    if (!cluster) {
+      return res.status(HTTP[404]).json({ message: `Cluster with id "${clusterId}" not found.` });
+    }
+
+    const [cpu, memory, pushTime] = await Promise.all([
+      queryPrometheusByJob('cpu_load_percentage'),
+      queryPrometheusByJob('memory_usage_percentage'),
+      queryPrometheusByJob('push_time_seconds'),
+    ]);
+
+    const jobs = Object.keys(cpu).sort((a, b) => (a === 'Master' ? -1 : b === 'Master' ? 1 : a.localeCompare(b)));
+    const nowSeconds = Date.now() / 1000;
+    let workerIndex = 0;
+
+    const nodes = jobs.map((job) => {
+      const isMaster = job === 'Master';
+      const cpuPercent = Math.round(cpu[job] || 0);
+      const memoryPercent = Math.round(memory[job] || 0);
+      const stale = pushTime[job] === undefined || nowSeconds - pushTime[job] > STALE_AFTER_SECONDS;
+      const status = stale
+        ? 'Down'
+        : cpuPercent > SATURATED_PERCENT || memoryPercent > SATURATED_PERCENT
+          ? 'Degraded'
+          : 'Healthy';
+      return {
+        nodeId: isMaster ? 'master-0' : `worker-${workerIndex++}`,
+        role: isMaster ? 'Master' : 'Worker',
+        ipAddress: isMaster ? cluster.host : job.split(':')[0],
+        status,
+        cpu: cpuPercent,
+        memory: memoryPercent,
+      };
+    });
+
+    return res.status(HTTP[200]).json({ data: nodes });
+  } catch (err) {
+    console.error('[getClusterNodes] Error:', err);
+    return res.status(HTTP[500]).json({
+      message: 'Unable to fetch node metrics from Prometheus.',
+      error: err instanceof Error ? err.message : 'Unknown error occurred',
+    });
+  }
+};
+
+export { addNewCluster, getAllClusters, getCluster, addUserToCluster, removeUserFromCluster, getMyClusters, getSelectedClustersStatus, getClusterNodes };

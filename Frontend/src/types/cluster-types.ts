@@ -28,4 +28,16 @@ export interface IClusterProperties {
   partitionCount: number;
   version: string;
   workersCount: number;
+  platform?: "kubernetes" | "docker";
+}
+
+export type NodeStatus = "Healthy" | "Degraded" | "Down";
+
+export interface INodeDetails {
+  nodeId: string;
+  role: "Master" | "Worker";
+  ipAddress: string;
+  status: NodeStatus;
+  cpu: number;
+  memory: number;
 }

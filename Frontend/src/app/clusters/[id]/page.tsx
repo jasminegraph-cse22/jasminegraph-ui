@@ -13,31 +13,35 @@ limitations under the License.
 
 'use client';
 import React, { useEffect, useState } from "react";
-import { Descriptions, Input, Row, Col, Divider } from 'antd';
+import { Descriptions, Input, Row, Col, Divider, Progress } from 'antd';
 import type { DescriptionsProps } from 'antd';
 import { Table, Tag } from 'antd';
 import type { TableProps } from 'antd';
-import { IClusterDetails, IClusterProperties } from "@/types/cluster-types";
+import { IClusterDetails, IClusterProperties, INodeDetails, NodeStatus } from "@/types/cluster-types";
 import { useAppSelector } from "@/redux/hook";
 import { useDispatch } from "react-redux";
 import { set_Selected_Cluster } from "@/redux/features/clusterData";
-import { getCluster, getClusterProperties } from "@/services/cluster-service";
+import { getCluster, getClusterProperties, getClusterNodes } from "@/services/cluster-service";
 import useAccessToken from '@/hooks/useAccessToken';
 
-interface DataType {
-  key: string;
-  nodeID: string;
-  ipAddress: string;
-  status: boolean;
-  role: string;
-  upTime: number;
-}
+const STATUS_COLORS: Record<NodeStatus, string> = {
+  Healthy: 'green',
+  Degraded: 'orange',
+  Down: 'volcano',
+};
 
-const columns: TableProps<DataType>['columns'] = [
+// Same thresholds as the usage legend: <65 normal, 65-85 elevated, >85 saturated
+const usageColor = (percent: number) => {
+  if (percent > 85) return '#fa541c';
+  if (percent >= 65) return '#faad14';
+  return '#52c41a';
+};
+
+const columns: TableProps<INodeDetails>['columns'] = [
   {
     title: 'Node ID',
-    dataIndex: 'nodeID',
-    key: 'nodeID',
+    dataIndex: 'nodeId',
+    key: 'nodeId',
   },
   {
     title: 'IP Address',
@@ -48,29 +52,19 @@ const columns: TableProps<DataType>['columns'] = [
     title: 'Status',
     dataIndex: 'status',
     key: 'status',
-    render: (_, { status: Status }) => (
-      <>
-        {Status ? (
-          <Tag color={'green'}>
-            {"Active"}
-          </Tag>) : (
-          <Tag color={"volcano"}>
-            {"Inactive"}
-          </Tag>
-        )}
-      </>
-    ),
+    render: (_, { status }) => <Tag color={STATUS_COLORS[status]}>{status}</Tag>,
   },
   {
-    title: 'Role',
-    dataIndex: 'role',
-    key: 'role',
+    title: 'CPU',
+    dataIndex: 'cpu',
+    key: 'cpu',
+    render: (cpu: number) => <Progress percent={cpu} size="small" strokeColor={usageColor(cpu)} />,
   },
   {
-    title: 'Uptime',
-    dataIndex: 'upTime',
-    key: 'uptime',
-    render: (text) => <p>{text} days</p>
+    title: 'Memory',
+    dataIndex: 'memory',
+    key: 'memory',
+    render: (memory: number) => <Progress percent={memory} size="small" strokeColor={usageColor(memory)} />,
   }
 ];
 
@@ -80,6 +74,7 @@ export default function ClusterDetails({ params }: { params: { id: string } }) {
   const { selectedCluster } = useAppSelector(state => state.clusterData)
   const [clusterDetails, setClusterDetails] = useState<IClusterDetails | null>(selectedCluster);
   const [clusterProperties, setClusterProperties] = useState<IClusterProperties | null>(null);
+  const [nodes, setNodes] = useState<INodeDetails[]>([]);
   const { getSrvAccessToken } = useAccessToken();
 
   const items: DescriptionsProps['items'] = [
@@ -101,7 +96,7 @@ export default function ClusterDetails({ params }: { params: { id: string } }) {
     {
       key: '4',
       label: 'Platform',
-      children: 'docker',
+      children: clusterProperties?.platform === 'kubernetes' ? 'Kubernetes' : 'Docker',
     },
     {
       key: '5',
@@ -138,21 +133,30 @@ export default function ClusterDetails({ params }: { params: { id: string } }) {
     }
   }
 
+  const fetchClusterNodes = async () => {
+    try{
+      const token = getSrvAccessToken() || "";
+      const res = await getClusterNodes(params.id, token);
+      if(res.data){
+        setNodes(res.data)
+      }
+    }catch(err){
+      console.log("Failed to fetch cluster nodes: ", err)
+    }
+  }
+
   useEffect(()=> {
     fetchClusterDetails()
     fetchClusterProperties()
+    fetchClusterNodes()
   }, [])
 
-  const getNodeData = () => {
-    return undefined;
+  const filterMasterNodeData = (nodes: INodeDetails[]) => {
+    return nodes.filter((node) => node.role === "Master");
   }
 
-  const filterMasterNodeData = (nodes: DataType[] | undefined) => {
-    return nodes?.filter((node) => node.role === "Master");
-  }
-
-  const filterWorkerNodeData = (nodes: DataType[] | undefined) => {
-    return nodes?.filter((node) => node.role === "Worker");
+  const filterWorkerNodeData = (nodes: INodeDetails[]) => {
+    return nodes.filter((node) => node.role === "Worker");
   }
 
   return (
@@ -167,9 +171,9 @@ export default function ClusterDetails({ params }: { params: { id: string } }) {
         </Col>
       </Row>
       <Divider>Master Nodes</Divider>
-      <Table columns={columns} dataSource={filterMasterNodeData(getNodeData())} pagination={false} />
+      <Table columns={columns} dataSource={filterMasterNodeData(nodes)} rowKey="nodeId" pagination={false} />
       <Divider>Worker Nodes</Divider>
-      <Table columns={columns} dataSource={filterWorkerNodeData(getNodeData())} pagination={false} />
+      <Table columns={columns} dataSource={filterWorkerNodeData(nodes)} rowKey="nodeId" pagination={false} />
     </div>
   );
 }
